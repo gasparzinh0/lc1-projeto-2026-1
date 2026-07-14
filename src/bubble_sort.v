@@ -84,26 +84,24 @@ Proof.
   induction l as [| h t hip]. 
   - trivial.      (* bubble de nada é nada, portanto, é trivial para nil*)
 
-  - destruct t as [| h' t']. simpl.       (* quebra t em lista de 1 item ou lista de mais de 1 item*)
-    + trivial.                            (* t caso [h' :: nil] é trivial*)
+  - destruct t as [| h' t']. simpl.         (* quebra t em lista de 1 item ou lista de mais de 1 item*)
+    + trivial.                              (* t caso [h' :: nil] é trivial*)
     + simpl. rewrite bubble_equation.
       destruct (h <=? h') eqn:Hle.          (* separa os casos do bubble x::y::l*)
       
       * (* if true then x::(bubble (y::l))*)
-        simpl. f_equal.                     (* remove o h*)
-        apply hip. inversion H; subst.       (* aplica a hipótese de indução hip e a inversão limpando o H*) 
-        apply H2.                           (* usa a hipótese H0 pra chegar na conclusão *)
+        simpl. f_equal.                      (* remove o h*)
+        apply hip. inversion H; subst.       (* aplica a hipótese de indução hip e a tática inversion no H*) 
+        apply H2.                            (* usa a hipótese H0 pra chegar na conclusão *)
 
-      * (* if false y::(bubble (x::l))*)
-        f_equal.                                (*COM ERRO CORRIGIR!!!!!!!!!!!*)
-        inversion H; subst.         
-        apply Nat.leb_gt in Hle.
-        lia. 
-        contradiction Hle.
-
-        
+      * (* if false y::(bubble (x::l))*)            
+        inversion H; subst.         (* aplica inversion no H pra pegar construtores*)
+        inversion H3; subst.        (* aplica inversion no H3 pra pegar construtores*)
+        apply Nat.leb_gt in Hle.    (* transforma o Hle em equação*)
+        lia.                        (* aplica regras matemáticas pra finalizar a prova*)
 
 Qed.  
+
 
      
 Lemma bs_sorted: forall l, Sorted le (bs l).
