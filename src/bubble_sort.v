@@ -114,15 +114,14 @@ Proof.
   - trivial.                                                      (* ordenar nil é trivial*)
   - constructor. trivial. Search (HdRel). apply HdRel_nil.        (* ordenar [x :: nil], aplica o construtor e simplifica a prova por head nil*)
   - constructor. 
-    + apply IHl1.                                                  (* ordenar bubble x :: y, aplica hipótese da indução*)
+    + apply IHl1.                                                 (* ordenar bubble x :: y, aplica hipótese da indução*)
     + apply Nat.leb_le in e0. 
-      destruct (bubble (y :: l1)) eqn:Hinduc. trivial.             (* quebra o bubble e resolve o nil*)
+      destruct (bubble (y :: l1)) eqn:Hinduc. trivial.            (* quebra o bubble e resolve o nil*)
       constructor.  assert (Hy_n0 : y <= n0).
-      inversion IHl1. subst. lia.                  (* quebra o x <= n0 em y <= n0 e x <= n0*)
-      Search (Sorted le ?l). apply bubble_sorted in IHl1. 
-
-   
-Qed.
+      inversion IHl1. subst.                                      (* quebra o x <= n0 em y <= n0 e x <= n0*)
+      Admitted.                                                   (* lia dando erro DE NOVO *)
+      (* lia.
+Qed.*)
      
 Lemma bs_sorted: forall l, Sorted le (bs l).
 Proof.
@@ -131,20 +130,40 @@ Proof.
   - trivial.                                  (* bubble sort de nada é nada, portanto é trivial para nil*)
   - simpl. induction (bs t) as [| h' t' ] eqn:Esort.
 
-    (* h :: nil*)
-    + apply bubble_n.
+    + (* h :: nil*)
+      apply bubble_n. apply hip.
 
-    apply hip.
-
+    + (* h :: h' :: t'*)
+      apply bubble_n. apply hip. 
 
 Qed.
+
 
 (** A seguir, mostraremos que o algoritmo bubblesort (função [bs]) gera como saída uma permutação da lista de entrada. 
 O lema a seguir nos diz que a função [bubble] também gera uma permutação da entrada: *)
 
 Lemma bubble_perm: forall l, Permutation l (bubble l).
 Proof.
-  intro l. functional induction (bubble l). Admitted.
+  (* introduz lista l*)
+  intro l. 
+
+  (* inicia a prova por indução funcional*)
+  functional induction (bubble l).
+  - trivial.                        (* permutação de nada é nada, portanto, prova trivial*)
+  - trivial.                        (* permutação de x com nada [x :: nil] é trivial*)
+  - constructor. apply IHl0.        (* tira o x e aplica a hipótese de indução*)
+  - destruct bubble.                (* quebra a bolha*)
+    + (* caso y :: nil*)
+      apply Permutation_sym in IHl0.                         (* permuta o nil da hipótese*)
+      apply Permutation_nil_cons in IHl0. inversion IHl0.    (* simplifica a hipótese pra falso e finaliza*)
+                            
+    + (* caso lista com mais de dois itens [y :: n :: l]*)
+      eapply perm_trans.              (* transforma a lista secundária em uma lista qualquer pra assumir a lista principal*)
+      apply perm_swap.                (* substitui a lista qualquer, juntando os dois casos*)
+      constructor. apply IHl0.        (* limpa o goal e aplica a hipótese de indução*)
+
+Qed.
+
 
 (** O lema [bs_permuta] a seguir, nos mostra que o algoritmo [bs] gera uma permutação da lista de entrada: *)
 
@@ -154,18 +173,11 @@ Proof.
   intro l.
 
   (* inicia a prova por indução*)
-  induction l as [| h t hip].         
-  - trivial.                                              (* permutação de nada é nada, prova trivial*)
-  - simpl. destruct (bs t) as [| h' t'] eqn:Eperm.        (* simplifica pro bubble e separa t como lista com head e tail*)
-    + (* casos [nil] e [h :: nil]*)
-      apply Permutation_sym in hip. apply Permutation_nil in hip.  
-      subst. apply Permutation_refl.
-
-    + (* caso de listas de mais de um item [x :: y :: t]*)
-      destruct (h <=? h').                (*separa os casos do bubble*)
-      * Search Permutation. perm_skip.          (*COM ERRO CORRIGIR!!!!!!!!!!!*)
-        apply hip.       
-      * rewrite perm_swap. apply perm_skip. apply hip.  (*COM ERRO CORRIGIR!!!!!!!!!!!*)
+  induction l as [| h t hip].      
+  - trivial.                                 (* permutação de nada é nada, prova trivial*)
+  - apply Permutation_sym. eapply Permutation_trans. apply Permutation_sym.       (* generaliza h :: t pra lista qualquer ?l'*)
+    simpl. apply bubble_perm. constructor. apply Permutation_sym. apply hip.      (* usa bubble_perm pra limpar as hipóteses e fecha a prova*)
+ 
 Qed.
 
 (** Por fim, a correção do algoritmo [bs] é obtida pelo teorema a seguir que estabelece que o algoritmo [bs] 
@@ -173,6 +185,10 @@ retorna uma permutação da lista de entrada que está ordenada: *)
     
 Theorem bs_correto: forall l, Sorted le (bs l) /\ Permutation l (bs l).
 Proof.
-Admitted.  
+  intros.
+  Search (?Function /\ ?Function). 
+  apply proj1.
+Qed.
+
 
 (** Repositório: %\url{https://github.com/flaviodemoura/bubble_sort}% *)
