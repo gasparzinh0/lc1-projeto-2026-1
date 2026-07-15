@@ -102,39 +102,71 @@ Proof.
         lia.                        (* aplica regras matemáticas pra finalizar a prova*)
 Qed.  
 
+(* Lemma de apoio pro bubble_n, resolve as cabeças das listas*)
+Lemma bubble_head_le : forall y l n0 l0, 
+  bubble (y :: l) = n0 :: l0 -> Sorted le (y :: l) -> y <= n0.
+Proof.
+  intros y l n0 l0 H_bub H_sort.
+  assert (H_simpl : bubble (y :: l) = y :: l).
+  apply bubble_sorted. exact H_sort.
+  rewrite H_simpl in H_bub.
+  injection H_bub as Hy_n0 _.
+  subst n0.
+  lia. 
+Qed.
 
-(* Lemma de apoio pro bs_sorted: *)
+(* Lemma de apoio pra facilitar a resolução do bs_sorted: *)
 Lemma bubble_n: forall n l, Sorted le l -> Sorted le (bubble (n::l)).
 Proof.
   (* introduções*)
   intros.
+  induction l as [| h t Hinduc].
 
-  (* aplica indução funcional na bolha*)
-  functional induction (bubble (n :: l)).
-  - trivial.                                                      (* ordenar nil é trivial*)
-  - constructor. trivial. Search (HdRel). apply HdRel_nil.        (* ordenar [x :: nil], aplica o construtor e simplifica a prova por head nil*)
-  - constructor. 
-    + apply IHl1.                                                 (* ordenar bubble x :: y, aplica hipótese da indução*)
-    + apply Nat.leb_le in e0. 
-      destruct (bubble (y :: l1)) eqn:Hinduc. trivial.            (* quebra o bubble e resolve o nil*)
-      constructor.  assert (Hy_n0 : y <= n0).
-      inversion IHl1. subst.                                      (* quebra o x <= n0 em y <= n0 e x <= n0*)
-      Admitted.                                                   (* lia dando erro DE NOVO *)
-      (* lia.
-Qed.*)
+  constructor. trivial. trivial.
+  rewrite bubble_equation.
+  destruct (n <=? h ) eqn: hip.
+  - constructor.  (* hip verdadeira*)
+    + (* caso 1: Sorted le (bubble (n0 :: l)) *)
+      assert (H_bubble_cauda : bubble (h :: t) = h :: t). 
+      apply bubble_sorted. exact H.
+      rewrite H_bubble_cauda. exact H.
+
+    + (* caso HdRel le n (bubble (n0 :: l)) *)
+      (* Criamos a simplificação da cauda pelo lema bubble_sorted *)
+      assert (H_bubble_cauda : bubble (h :: t) = h :: t). 
+      apply bubble_sorted. exact H.
+      (* Substituímos no HdRel *)
+      rewrite H_bubble_cauda. (* simplifica o HdRel para n <= n0 *)
+      constructor. apply Nat.leb_le in hip. exact hip.
+  
+  - constructor. (* hip falso*)
+    + (* Sub-caso 1: Sorted le (bubble (n0 :: l)) *)
+      assert (H_bubble_cauda : bubble (h :: t) = h :: t). 
+      apply bubble_sorted. exact H.
+      inversion H; subst. 
+      apply Hinduc. apply H2.
+      
+    + (* Sub-caso 2: HdRel le n (bubble (n0 :: l)) *)
+      destruct t as [| n1 l1]. 
+      
+      * rewrite bubble_equation. constructor. 
+        apply Nat.leb_gt in hip. lia.
+
+      * rewrite bubble_equation.
+        destruct (n <=? n1) eqn:hn1.
+          (* Se n <= n1, n fica na frente: vira n0 <= n *)
+          constructor. apply Nat.leb_gt in hip. lia.
+          (* Se n > n1, n1 fica na frente: vira n0 <= n1 *)
+          constructor. 
+          inversion H; subst. inversion H3; subst. assumption.
+Qed.
      
 Lemma bs_sorted: forall l, Sorted le (bs l).
 Proof.
   intros. 
   induction l as [| h t hip].
   - trivial.                                  (* bubble sort de nada é nada, portanto é trivial para nil*)
-  - simpl. induction (bs t) as [| h' t' ] eqn:Esort.
-
-    + (* h :: nil*)
-      apply bubble_n. apply hip.
-
-    + (* h :: h' :: t'*)
-      apply bubble_n. apply hip. 
+  - simpl. apply bubble_n. apply hip.         (* aplica o bubble_n e a hipótese pra resolução*) 
 
 Qed.
 
