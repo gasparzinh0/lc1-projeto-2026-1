@@ -4,6 +4,7 @@ Require Import Recdef.
 Require Import Sorted.
 Require Import Permutation.
 Require Import Lia.
+Require Import FunInd.
 (* end hide*)
 
 (**
@@ -80,9 +81,9 @@ Proof.
   (* introduz as implicações*)
   intros l H. 
   
-  (* l como [ | head tail hipótese_indução]*)
+  (* inicia a prova por indução*)
   induction l as [| h t hip]. 
-  - trivial.      (* bubble de nada é nada, portanto, é trivial para nil*)
+  - trivial.                                (* bubble de nada é nada, portanto, é trivial para nil*)
 
   - destruct t as [| h' t']. simpl.         (* quebra t em lista de 1 item ou lista de mais de 1 item*)
     + trivial.                              (* t caso [h' :: nil] é trivial*)
@@ -90,7 +91,7 @@ Proof.
       destruct (h <=? h') eqn:Hle.          (* separa os casos do bubble x::y::l*)
       
       * (* if true then x::(bubble (y::l))*)
-        simpl. f_equal.                      (* remove o h*)
+        simpl. f_equal.                      (* remove o h solto dos dois lados*)
         apply hip. inversion H; subst.       (* aplica a hipótese de indução hip e a tática inversion no H*) 
         apply H2.                            (* usa a hipótese H0 pra chegar na conclusão *)
 
@@ -99,18 +100,44 @@ Proof.
         inversion H3; subst.        (* aplica inversion no H3 pra pegar construtores*)
         apply Nat.leb_gt in Hle.    (* transforma o Hle em equação*)
         lia.                        (* aplica regras matemáticas pra finalizar a prova*)
-
 Qed.  
 
 
+(* Lemma de apoio pro bs_sorted: *)
+Lemma bubble_n: forall n l, Sorted le l -> Sorted le (bubble (n::l)).
+Proof.
+  (* introduções*)
+  intros.
+
+  (* aplica indução funcional na bolha*)
+  functional induction (bubble (n :: l)).
+  - trivial.                                                      (* ordenar nil é trivial*)
+  - constructor. trivial. Search (HdRel). apply HdRel_nil.        (* ordenar [x :: nil], aplica o construtor e simplifica a prova por head nil*)
+  - constructor. 
+    + apply IHl1.                                                  (* ordenar bubble x :: y, aplica hipótese da indução*)
+    + apply Nat.leb_le in e0. 
+      destruct (bubble (y :: l1)) eqn:Hinduc. trivial.             (* quebra o bubble e resolve o nil*)
+      constructor.  assert (Hy_n0 : y <= n0).
+      inversion IHl1. subst. lia.                  (* quebra o x <= n0 em y <= n0 e x <= n0*)
+      Search (Sorted le ?l). apply bubble_sorted in IHl1. 
+
+   
+Qed.
      
 Lemma bs_sorted: forall l, Sorted le (bs l).
 Proof.
   intros. 
   induction l as [| h t hip].
-  - trivial.
-  - simpl.   (*INCOMPLETO CORRIGIR!!!!!!!!!!!*)
+  - trivial.                                  (* bubble sort de nada é nada, portanto é trivial para nil*)
+  - simpl. induction (bs t) as [| h' t' ] eqn:Esort.
 
+    (* h :: nil*)
+    + apply bubble_n.
+
+    apply hip.
+
+
+Qed.
 
 (** A seguir, mostraremos que o algoritmo bubblesort (função [bs]) gera como saída uma permutação da lista de entrada. 
 O lema a seguir nos diz que a função [bubble] também gera uma permutação da entrada: *)
@@ -123,13 +150,21 @@ Proof.
 
 Lemma bs_permuta: forall l, Permutation l (bs l).
 Proof. 
-  intro l. induction l as [| h t hip].
-  - trivial.
-  - simpl. destruct (bs t) as [| h' t'] eqn:Ebpt.
-    + apply Permutation_sym in hip. apply Permutation_nil in hip.
+  (* instroduz a lista l*)
+  intro l.
+
+  (* inicia a prova por indução*)
+  induction l as [| h t hip].         
+  - trivial.                                              (* permutação de nada é nada, prova trivial*)
+  - simpl. destruct (bs t) as [| h' t'] eqn:Eperm.        (* simplifica pro bubble e separa t como lista com head e tail*)
+    + (* casos [nil] e [h :: nil]*)
+      apply Permutation_sym in hip. apply Permutation_nil in hip.  
       subst. apply Permutation_refl.
-    + destruct (h <=? h').
-      * apply perm_skip. apply hip.  (*COM ERRO CORRIGIR!!!!!!!!!!!*)
+
+    + (* caso de listas de mais de um item [x :: y :: t]*)
+      destruct (h <=? h').                (*separa os casos do bubble*)
+      * Search Permutation. perm_skip.          (*COM ERRO CORRIGIR!!!!!!!!!!!*)
+        apply hip.       
       * rewrite perm_swap. apply perm_skip. apply hip.  (*COM ERRO CORRIGIR!!!!!!!!!!!*)
 Qed.
 
