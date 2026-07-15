@@ -185,9 +185,14 @@ retorna uma permutação da lista de entrada que está ordenada: *)
     
 Theorem bs_correto: forall l, Sorted le (bs l) /\ Permutation l (bs l).
 Proof.
+  (* introduções*)
   intros.
-  Search (?Function /\ ?Function). 
-  apply proj1.
+
+  (* quebra a proposição em 2 lados -> Sorted e Permutation*)
+  split.
+  - apply bs_sorted.            (* Aplicamos a prova constuída bs_sorted*)
+  - apply bs_permuta.           (* Aplicamos a prova constuída bs_permuta*)
+
 Qed.
 
 
